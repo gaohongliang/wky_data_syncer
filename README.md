@@ -3,7 +3,7 @@
 实现原理：python定时任务登陆smb遍历文件列表，如果存在.xltd后缀（还未下载完）忽略，下载完的下载到本地目录，然后删除smb上的文件，下载前重新定义本地文件名去除广告字符
 
 # 配置文件说明 /app/conf/config.ini
-`
+```text
 [global]
 #同步完后删除玩客云源文件
 delete_source_file = 1
@@ -28,6 +28,6 @@ path = onecloud/tddownload
 [store]
 #本地存储目录
 path = /Users/gaohongliang/Downloads/share
-`
+```
 
 # docker 运行说明
