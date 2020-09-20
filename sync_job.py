@@ -64,6 +64,21 @@ def get_new_name(file_name, is_dir):
     return new_name
 
 
+def del_smb_files(client, file_path):
+    """
+    递归删除文件
+    """
+    is_dir = client.is_directory(const.SAMBA_SERVICE_NAME, file_path)
+    if is_dir:
+        client.del_file(const.SAMBA_SERVICE_NAME, file_path + "/*")
+        file_list = client.all_file_names_in_dir(const.SAMBA_SERVICE_NAME, file_path)
+        for file_name in file_list:
+            del_smb_files(client, file_path + "/" + file_name)
+        client.del_dir(const.SAMBA_SERVICE_NAME, file_path)
+    else:
+        client.del_file(const.SAMBA_SERVICE_NAME, file_path)
+
+
 def job():
     """
     定时任务
@@ -137,10 +152,7 @@ def job():
             if const.GLOBAL_DELETE_SOURCE_FILE:
                 del_path = const.SAMBA_PATH + "/" + file_name
                 logger.info('delete smb file or dir :%s' % del_path)
-                if is_dir:
-                    client.del_dir(const.SAMBA_SERVICE_NAME, del_path)
-                else:
-                    client.del_file(const.SAMBA_SERVICE_NAME, del_path)
+                del_smb_files(client, del_path)
                 logger.info('delete smb file or dir ok')
     finally:
         """关闭连接"""
@@ -166,7 +178,6 @@ def job():
         智能分析文件名
         下载电影封皮、字幕
         """
-
 
 # if __name__ == '__main__':
 #     job()
