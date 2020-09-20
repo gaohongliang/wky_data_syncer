@@ -8,7 +8,7 @@ COPY requirements.txt /app/
 
 WORKDIR /app/
 
-# VOLUME ["/app/conf/config.ini"]
+VOLUME ["/app/store"]
 
 RUN pip install --no-cache-dir -r requirements.txt
 
