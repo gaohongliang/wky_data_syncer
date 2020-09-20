@@ -1,6 +1,10 @@
 FROM python:3.6
 
+MAINTAINER Mr Gao
+
 ADD ./src /app
+
+VOLUME ["/app/conf/config.ini"]
 
 WORKDIR /app
 
