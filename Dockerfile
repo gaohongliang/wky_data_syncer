@@ -3,8 +3,9 @@ FROM python:3.6
 MAINTAINER Mr Gao
 
 ADD ./src /app
+ADD ./requirements.txt /app
 
-VOLUME ["/app/conf/config.ini"]
+# VOLUME ["/app/conf/config.ini"]
 
 WORKDIR /app
 
