@@ -28,7 +28,7 @@ service_name = 23ab
 path = onecloud/tddownload
 [store]
 #本地存储目录
-path = /Users/gaohongliang/Downloads/share
+path = /app/store
 ```
 
 # docker 运行说明
@@ -36,5 +36,6 @@ path = /Users/gaohongliang/Downloads/share
 docker run --name wky_data_syncer \
 --restart always \
 -v /localdir/config.ini:/app/conf/config.ini \
+-v /localdir/share:/app/store \
 -d gaohongliang/wky_data_syncer
 ```
