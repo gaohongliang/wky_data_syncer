@@ -32,3 +32,9 @@ path = /Users/gaohongliang/Downloads/share
 ```
 
 # docker 运行说明
+```
+docker run --name wky_data_syncer \
+--restart always \
+-v /localdir/config.ini:/app/conf/config.ini \
+-d gaohongliang/wky_data_syncer
+```
