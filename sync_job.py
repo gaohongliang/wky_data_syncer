@@ -1,6 +1,6 @@
-from src.smb_client import SMBClient
-from src.utils import logger, get_suffix
-from src.config import const
+from smb_client import SMBClient
+from utils import logger, get_suffix
+from config import const
 import os
 
 running = False

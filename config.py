@@ -2,7 +2,7 @@ import configparser
 import os
 import logging
 import sys
-from src.const import Const
+from const import Const
 
 """
 基础读取配置文件

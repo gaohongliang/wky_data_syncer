@@ -1,7 +1,7 @@
-from src.config import const
+from config import const
 from apscheduler.schedulers.blocking import BlockingScheduler
-from src.sync_job import job
-from src.utils import logger
+from sync_job import job
+from utils import logger
 
 
 def init_job():

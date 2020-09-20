@@ -2,12 +2,13 @@ FROM python:3.6
 
 MAINTAINER Mr Gao
 
-ADD ./src /app
-ADD ./requirements.txt /app
+COPY *.py /app/
+COPY conf/config.ini /app/conf/
+COPY requirements.txt /app/
+
+WORKDIR /app/
 
 # VOLUME ["/app/conf/config.ini"]
-
-WORKDIR /app
 
 RUN pip install --no-cache-dir -r requirements.txt
 
