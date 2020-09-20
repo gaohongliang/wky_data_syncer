@@ -3,7 +3,7 @@ from utils import logger, get_suffix
 from config import const
 import os
 
-running = False
+JOB_IS_RUNNING = False
 
 
 def is_dir_download_finish(client, path):
@@ -69,9 +69,12 @@ def job():
     定时任务
     :return:
     """
-    if running:
+    global JOB_IS_RUNNING
+    if JOB_IS_RUNNING:
         logger.info("job is running,skip this time.")
         return
+
+    JOB_IS_RUNNING = True
 
     client = None
     try:
@@ -143,7 +146,7 @@ def job():
         """关闭连接"""
         logger.info("disconnect smb.")
         client.disconnect()
-
+        JOB_IS_RUNNING = False
     """
         0 获取连接
         1 遍历目录
@@ -165,5 +168,5 @@ def job():
         """
 
 
-if __name__ == '__main__':
-    job()
+# if __name__ == '__main__':
+#     job()
