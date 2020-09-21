@@ -1,7 +1,7 @@
 from smb_client import SMBClient
 from utils import logger, get_suffix
 from config import const
-import os
+import os, stat
 
 JOB_IS_RUNNING = False
 
@@ -46,6 +46,15 @@ def is_skip(file_name):
     return get_suffix(file_name) in const.GLOBAL_IGNORE
 
 
+def is_torrent(file_name):
+    """
+    是否为bt种子文件
+    :param file_name:
+    :return:
+    """
+    return get_suffix(file_name) == '.torrent'
+
+
 def get_new_name(file_name, is_dir):
     """
     去掉名字中广告字符
@@ -79,6 +88,43 @@ def del_smb_files(client, file_path):
         client.del_file(const.SAMBA_SERVICE_NAME, file_path)
 
 
+def download_smb_files(client, smb_file_path, smb_file_name, is_dir, local_file_path):
+    """
+    下载文件
+    文件夹递归处理
+    """
+    if is_dir:
+        sub_file_list = client.all_file_names_in_dir(const.SAMBA_SERVICE_NAME,
+                                                     smb_file_path + "/" + smb_file_name)
+        for sub_file_name in sub_file_list:
+            sub_is_dir = client.is_directory(const.SAMBA_SERVICE_NAME,
+                                             smb_file_path + "/" + smb_file_name + "/" + sub_file_name)
+
+            if sub_is_dir:
+                os.mkdir(local_file_path + "/" + sub_file_name)
+                os.chmod(local_file_path + "/" + sub_file_name, stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO)
+                download_smb_files(client, smb_file_path + "/" + smb_file_name, sub_file_name, sub_is_dir,
+                                   local_file_path + "/" + sub_file_name)
+            else:
+                new_name = get_new_name(sub_file_name, False)
+                from_path = smb_file_path + "/" + smb_file_name + "/" + sub_file_name
+                to_path = local_file_path + "/" + new_name
+                logger.info('copy [%s] to local [%s] ...' % (from_path, to_path))
+                client.download(const.SAMBA_SERVICE_NAME, from_path, to_path + ".sync")
+                os.rename(to_path + ".sync", to_path)
+                os.chmod(to_path, stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO)
+                logger.info('copy ok')
+    else:
+        new_name = get_new_name(smb_file_name, False)
+        from_path = smb_file_path + "/" + smb_file_name
+        to_path = local_file_path + "/" + new_name
+        logger.info('copy [%s] to local [%s] ...' % (from_path, to_path))
+        client.download(const.SAMBA_SERVICE_NAME, from_path, to_path + ".sync")
+        os.rename(to_path + ".sync", to_path)
+        os.chmod(to_path, stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO)
+        logger.info('copy ok')
+
+
 def job():
     """
     定时任务
@@ -100,6 +146,8 @@ def job():
 
         """遍历目录"""
         logger.info("list folder files.")
+        torrent_file_list = list()
+        all_download_finish = True
         file_list = client.all_file_names_in_dir(const.SAMBA_SERVICE_NAME, const.SAMBA_PATH)
         for file_name in file_list:
             logger.info('sync file [%s].' % file_name)
@@ -107,18 +155,25 @@ def job():
             if is_skip(file_name):
                 logger.info('ignore by name.')
                 continue
+
+            if is_torrent(file_name):
+                logger.info('is torrent file.')
+                torrent_file_list.append(file_name)
+                continue
+
             """判断是否为文件夹"""
             is_dir = client.is_directory(const.SAMBA_SERVICE_NAME, const.SAMBA_PATH + "/" + file_name)
             logger.info('file is dir : %s.' % is_dir)
             is_download_finish = False
+            """判断是否有未下载完文件"""
             if is_dir:
-                """判断内部是否有未下载完文件"""
                 is_download_finish = is_dir_download_finish(client, const.SAMBA_PATH + "/" + file_name)
             else:
                 is_download_finish = is_file_download_finish(const.SAMBA_PATH + "/" + file_name)
             logger.info('is wky download finish: %s.' % is_download_finish)
             if not is_download_finish:
-                logger.info('skip this file.')
+                logger.info("didn't download finish,skip this file.")
+                all_download_finish = False
                 continue
             """开始下载"""
             new_dir_name = get_new_name(file_name, True)
@@ -127,26 +182,9 @@ def job():
                 logger.info('local file dir exists,skip this file.')
                 continue
             os.mkdir(const.STORE_PATH + "/" + new_dir_name)
+            os.chmod(const.STORE_PATH + "/" + new_dir_name, stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO)
 
-            if not is_dir:
-                new_name = get_new_name(file_name, False)
-                from_path = const.SAMBA_PATH + "/" + file_name
-                to_path = const.STORE_PATH + "/" + new_dir_name + "/" + new_name
-                logger.info('copy [%s] to local [%s] ...' % (from_path, to_path))
-                client.download(const.SAMBA_SERVICE_NAME, from_path, to_path + ".sync")
-                os.rename(to_path + ".sync", to_path)
-                logger.info('copy ok')
-            else:
-                sub_file_list = client.all_file_names_in_dir(const.SAMBA_SERVICE_NAME,
-                                                             const.SAMBA_PATH + "/" + file_name)
-                for sub_file_name in sub_file_list:
-                    new_name = get_new_name(sub_file_name, False)
-                    from_path = const.SAMBA_PATH + "/" + file_name + "/" + sub_file_name
-                    to_path = const.STORE_PATH + "/" + new_dir_name + "/" + new_name
-                    logger.info('copy [%s] to local [%s] ...' % (from_path, to_path))
-                    client.download(const.SAMBA_SERVICE_NAME, from_path, to_path + ".sync")
-                    os.rename(to_path + ".sync", to_path)
-                    logger.info('copy ok')
+            download_smb_files(client, const.SAMBA_PATH, file_name, is_dir, const.STORE_PATH + "/" + new_dir_name)
 
             """删除smb文件"""
             if const.GLOBAL_DELETE_SOURCE_FILE:
@@ -154,6 +192,10 @@ def job():
                 logger.info('delete smb file or dir :%s' % del_path)
                 del_smb_files(client, del_path)
                 logger.info('delete smb file or dir ok')
+        """没有下载中任务时删除没用的bt种子文件"""
+        if all_download_finish:
+            for torrent_file in torrent_file_list:
+                del_smb_files(client, const.SAMBA_PATH + "/" + torrent_file)
     finally:
         """关闭连接"""
         logger.info("disconnect smb.")
@@ -172,12 +214,14 @@ def job():
         5 把文件同步值本地文件夹内
         6 删除smb中文件
         # 7 删除本地同步记录文件
+        7 下载完自动删除
 
         feature
-        解析smb 种子文件，下载完自动删除
+        
         智能分析文件名
         下载电影封皮、字幕
         """
 
-# if __name__ == '__main__':
-#     job()
+
+if __name__ == '__main__':
+    job()
