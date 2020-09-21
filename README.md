@@ -31,7 +31,7 @@ path = onecloud/tddownload
 path = /app/store
 ```
 
-# docker 运行说明
+# docker run
 ```
 docker run --name wky_data_syncer \
 --restart always \
