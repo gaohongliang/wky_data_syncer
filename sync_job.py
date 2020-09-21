@@ -195,6 +195,7 @@ def job():
         """没有下载中任务时删除没用的bt种子文件"""
         if all_download_finish:
             for torrent_file in torrent_file_list:
+                logger.info('delete smb torrent file:%s' % torrent_file)
                 del_smb_files(client, const.SAMBA_PATH + "/" + torrent_file)
     finally:
         """关闭连接"""
