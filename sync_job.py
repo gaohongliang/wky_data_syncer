@@ -151,14 +151,15 @@ def job():
         file_list = client.all_file_names_in_dir(const.SAMBA_SERVICE_NAME, const.SAMBA_PATH)
         for file_name in file_list:
             logger.info('sync file [%s].' % file_name)
+            """忽略bt种子文件"""
+            if is_torrent(file_name):
+                logger.info('skip torrent file.')
+                torrent_file_list.append(file_name)
+                continue
+                
             """根据后缀判断是否忽略跳过"""
             if is_skip(file_name):
                 logger.info('ignore by name.')
-                continue
-
-            if is_torrent(file_name):
-                logger.info('is torrent file.')
-                torrent_file_list.append(file_name)
                 continue
 
             """判断是否为文件夹"""
